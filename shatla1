@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>شتلة — ابحث عن نبتتك</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--leaf:#2D6A4F;--mint:#52B788;--pale:#D8F3DC;--soil:#4A3728;--cream:#F8FAF5;--border:#C9E4CA;--shadow:rgba(45,106,79,0.12)}
+body{font-family:'Cairo',sans-serif;background:var(--cream);min-height:100vh;color:var(--soil);direction:rtl}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:40px;height:40px;border:4px solid var(--pale);border-top-color:var(--leaf);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+nav{background:var(--leaf);display:flex;justify-content:space-between;align-items:center;padding:0 20px;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,0.15)}
+.logo{color:#fff;font-weight:900;font-size:1.15rem;padding:14px 0}
+.nav-tabs{display:flex;gap:4px}
+.nav-tab{padding:8px 16px;border-radius:10px;border:none;font-family:'Cairo',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;background:transparent;color:#fff;transition:background .2s}
+.nav-tab.active{background:rgba(255,255,255,.2)}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* USER TAB */
+.user-wrap{max-width:560px;margin:0 auto;padding:0 16px 60px}
+.hero{text-align:center;padding:32px 0 24px}
+.hero-icon{font-size:48px}
+.hero h1{font-size:1.8rem;font-weight:900;color:var(--leaf);margin:8px 0 0}
+.hero p{color:#6B7280;font-size:.9rem;margin-top:4px}
+.search-row{display:flex;gap:10px;margin-bottom:14px}
+.search-input{flex:1;padding:13px 16px;border:2px solid var(--border);border-radius:14px;font-family:'Cairo',sans-serif;font-size:1rem;background:#fff;outline:none;direction:rtl;color:var(--soil)}
+.search-input:focus{border-color:var(--mint)}
+.search-btn{padding:13px 20px;background:var(--leaf);color:#fff;border:none;border-radius:14px;font-family:'Cairo',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.search-btn:disabled{background:#aaa;cursor:not-allowed}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+.chip{background:var(--pale);color:var(--leaf);border:1px solid var(--border);padding:5px 14px;border-radius:20px;font-size:.85rem;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif}
+.chip:hover{background:#B7E4C7}
+.loading-box{text-align:center;padding:48px 20px}
+.empty-box{text-align:center;padding:48px 20px;color:#6B7280}
+.empty-box .empty-icon{font-size:40px;margin-bottom:10px}
+.plant-card{background:#fff;border-radius:18px;padding:18px 20px;border:1px solid var(--border);box-shadow:0 4px 16px var(--shadow);display:flex;gap:14px;align-items:flex-start;margin-bottom:12px}
+.plant-emoji{font-size:2.8rem;line-height:1}
+.plant-name-ar{font-size:1.3rem;font-weight:900;color:var(--leaf)}
+.plant-name-en{font-size:.82rem;color:#9CA3AF;margin-top:2px}
+.plant-desc{font-size:.88rem;color:#555;margin-top:8px;line-height:1.6}
+.plant-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.tag{background:var(--pale);color:var(--leaf);font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:10px}
+.price-band{background:linear-gradient(135deg,#2D6A4F,#52B788);color:#fff;border-radius:14px;padding:14px 18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.price-label{font-size:.82rem;opacity:.8}
+.price-currency{font-size:.75rem;opacity:.65}
+.price-value{font-size:1.4rem;font-weight:900}
+.care-box{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:12px}
+.section-mini{font-size:.78rem;font-weight:700;color:#9CA3AF;margin-bottom:10px}
+.care-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.care-item{display:flex;align-items:center;gap:8px}
+.care-icon{font-size:1.1rem}
+.care-lbl{font-size:.72rem;color:#9CA3AF}
+.care-val{font-size:.88rem;font-weight:700;color:var(--soil)}
+.stores-title{font-size:.78rem;font-weight:700;color:#9CA3AF;margin-bottom:8px;padding-right:4px}
+.store-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 8px var(--shadow)}
+.store-top{display:flex;justify-content:space-between;align-items:flex-start}
+.store-name{font-weight:800;font-size:1rem;color:var(--soil)}
+.avail-badge{font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:10px}
+.avail-yes{background:var(--pale);color:var(--leaf)}
+.avail-call{background:#FFF3CD;color:#856404}
+.store-location{font-size:.83rem;color:#9CA3AF;margin-top:4px}
+.store-note{font-size:.8rem;color:#aaa;margin-top:4px}
+.store-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)}
+.store-price{font-size:1.1rem;font-weight:800;color:var(--leaf)}
+.copy-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--pale);color:var(--leaf);border:1.5px solid var(--border);border-radius:10px;font-family:'Cairo',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;direction:ltr}
+.copy-btn.copied{background:var(--leaf);color:#fff;border-color:var(--leaf)}
+
+/* ADMIN TAB */
+.admin-wrap{max-width:680px;margin:0 auto;padding:24px 16px 60px}
+.login-wrap{max-width:360px;margin:80px auto;padding:24px}
+.login-title{text-align:center;margin-bottom:28px}
+.login-title .login-icon{font-size:40px}
+.login-title h2{font-weight:900;color:var(--leaf);margin:8px 0 4px}
+.login-title p{color:#9CA3AF;font-size:.88rem}
+.pass-err{color:#EF4444;font-size:.85rem;margin-bottom:8px}
+.pass-hint{text-align:center;font-size:.78rem;color:#bbb;margin-top:12px}
+.admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.admin-title{font-weight:900;color:var(--leaf);font-size:1.3rem;margin:0}
+.admin-sub{color:#9CA3AF;font-size:.82rem;margin:0}
+.logout-btn{padding:7px 14px;background:#FEE2E2;color:#DC2626;border:none;border-radius:10px;font-family:'Cairo',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer}
+.section-tabs{display:flex;gap:8px;margin-bottom:20px}
+.section-tab{padding:9px 20px;border-radius:12px;font-family:'Cairo',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;background:var(--pale);color:var(--leaf);border:none}
+.section-tab.active{background:var(--leaf);color:#fff}
+.add-btn{display:flex;align-items:center;gap:6px;padding:10px 18px;background:var(--leaf);color:#fff;border:none;border-radius:12px;font-family:'Cairo',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;margin-bottom:16px}
+.form-box{background:#F0FDF4;border:2px solid var(--mint);border-radius:16px;padding:20px;margin-bottom:16px}
+.form-box h3{margin:0 0 14px;color:var(--leaf);font-weight:800}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.form-group{margin-bottom:10px}
+.form-label{font-size:.78rem;font-weight:700;color:var(--soil);display:block;margin-bottom:4px}
+.form-input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Cairo',sans-serif;font-size:.9rem;direction:rtl;outline:none;color:var(--soil);background:#fff}
+.form-input:focus{border-color:var(--mint)}
+.form-btns{display:flex;gap:8px}
+.save-btn{padding:10px 20px;background:var(--leaf);color:#fff;border:none;border-radius:12px;font-family:'Cairo',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer}
+.cancel-btn{padding:10px 20px;background:#F3F4F6;color:#6B7280;border:none;border-radius:12px;font-family:'Cairo',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer}
+.item-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.item-top{display:flex;justify-content:space-between;align-items:center}
+.item-name{font-weight:800;color:var(--soil)}
+.item-sub{font-size:.82rem;color:#9CA3AF;margin-top:2px}
+.item-actions{display:flex;gap:8px}
+.icon-btn{width:32px;height:32px;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem}
+.edit-btn-sm{background:#EFF6FF;color:#3B82F6}
+.del-btn-sm{background:#FEF2F2;color:#EF4444}
+.active-badge{font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:8px}
+.badge-active{background:var(--pale);color:var(--leaf)}
+.badge-hidden{background:#F3F4F6;color:#9CA3AF}
+.store-links-preview{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+.link-chip{background:#F0FDF4;border:1px solid var(--border);color:var(--leaf);font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:8px}
+.sub-section{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px}
+.sub-title{font-size:.82rem;font-weight:800;color:var(--leaf);margin-bottom:10px}
+.store-link-row{margin-bottom:12px}
+.store-link-check{display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer}
+.store-link-fields{margin-right:24px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.avail-check{display:flex;align-items:center;gap:6px;margin-top:20px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--leaf);color:#fff;padding:10px 24px;border-radius:30px;font-weight:700;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,.15);display:none}
+.toast.show{display:block}
+.result-block{margin-bottom:28px}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<nav>
+  <div class="logo">🌿 شتلة</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('user')">🔍 بحث</button>
+    <button class="nav-tab" onclick="switchTab('admin')">⚙️ إدارة</button>
+  </div>
+</nav>
+
+<!-- USER TAB -->
+<div class="tab-content active" id="tab-user">
+  <div class="user-wrap">
+    <div class="hero">
+      <div class="hero-icon">🌿</div>
+      <h1>شتلة</h1>
+      <p>ابحث عن نبتتك — سعر، محل، ورقم هاتف</p>
+    </div>
+    <div class="search-row">
+      <input class="search-input" id="searchInput" type="text" placeholder="اكتب اسم النبتة..." onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="search-btn" id="searchBtn" onclick="doSearch()">🔍 ابحث</button>
+    </div>
+    <div class="chips">
+      <button class="chip" onclick="quickSearch('ورد')">🌹 ورد</button>
+      <button class="chip" onclick="quickSearch('ياسمين')">🌸 ياسمين</button>
+      <button class="chip" onclick="quickSearch('صبار')">🌵 صبار</button>
+      <button class="chip" onclick="quickSearch('فيكس')">🌳 فيكس</button>
+      <button class="chip" onclick="quickSearch('نخيل')">🌴 نخيل</button>
+      <button class="chip" onclick="quickSearch('لافندر')">💜 لافندر</button>
+    </div>
+    <div id="searchResults"></div>
+  </div>
+</div>
+
+<!-- ADMIN TAB -->
+<div class="tab-content" id="tab-admin">
+  <!-- LOGIN -->
+  <div id="loginScreen">
+    <div class="login-wrap">
+      <div class="login-title">
+        <div class="login-icon">🔐</div>
+        <h2>لوحة الإدارة</h2>
+        <p>أدخل كلمة السر للمتابعة</p>
+      </div>
+      <input type="password" id="passInput" class="form-input" placeholder="كلمة السر" style="margin-bottom:10px" onkeydown="if(event.key==='Enter')doLogin()">
+      <p class="pass-err" id="passErr" style="display:none">كلمة السر غلط</p>
+      <button class="save-btn" style="width:100%;padding:14px" onclick="doLogin()">دخول</button>
+      <p class="pass-hint">كلمة السر: shatla2024</p>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" style="display:none">
+    <div class="admin-wrap">
+      <div class="admin-header">
+        <div>
+          <p class="admin-title">⚙️ لوحة الإدارة</p>
+          <p class="admin-sub" id="adminSub">...</p>
+        </div>
+        <button class="logout-btn" onclick="doLogout()">خروج</button>
+      </div>
+      <div class="section-tabs">
+        <button class="section-tab active" onclick="switchSection('stores')">🏪 المحلات</button>
+        <button class="section-tab" onclick="switchSection('plants')">🌿 النباتات</button>
+      </div>
+      <div id="section-stores"></div>
+      <div id="section-plants" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── SUPABASE ────────────────────────────────────────────────────────────────
+const { createClient } = supabase
+const db = createClient(
+  'https://laehgpfbeifzrqkutvyz.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhZWhncGZiZWlmenJxa3V0dnl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNTc1ODcsImV4cCI6MjA5NTkzMzU4N30.4DPpaUhkanP5-T-sDanjKfvjRKzQzi6y71zfFhOXgKo'
+)
+
+// ── STATE ───────────────────────────────────────────────────────────────────
+let allStores = []
+let allPlants = []
+let currentSection = 'stores'
+let storeFormData = null
+let plantFormData = null
+let linkFormData = {}
+
+// ── TOAST ───────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.classList.add('show')
+  setTimeout(() => t.classList.remove('show'), 2500)
+}
+
+// ── TABS ────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'))
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'))
+  document.getElementById('tab-' + tab).classList.add('active')
+  event.currentTarget.classList.add('active')
+}
+
+// ── USER SEARCH ─────────────────────────────────────────────────────────────
+function quickSearch(term) {
+  document.getElementById('searchInput').value = term
+  doSearch()
+}
+
+async function doSearch() {
+  const term = document.getElementById('searchInput').value.trim()
+  if (!term) return
+  const btn = document.getElementById('searchBtn')
+  btn.disabled = true
+  btn.textContent = '...'
+  const res = document.getElementById('searchResults')
+  res.innerHTML = '<div class="loading-box"><div class="spinner"></div><p style="color:#6B7280">جاري البحث...</p></div>'
+
+  const { data } = await db.from('plants')
+    .select('*, plant_store_links(*, stores(*))')
+    .or(`name_ar.ilike.%${term}%,name_en.ilike.%${term}%`)
+
+  btn.disabled = false
+  btn.textContent = '🔍 ابحث'
+
+  if (!data || data.length === 0) {
+    res.innerHTML = `<div class="empty-box"><div class="empty-icon">🔍</div><p>ما لقينا نتائج لـ "${term}"</p><p style="font-size:.85rem;margin-top:4px">جرب اسم ثاني</p></div>`
+    return
+  }
+
+  res.innerHTML = data.map(plant => {
+    const storeCards = (plant.plant_store_links || [])
+      .filter(l => l.stores && l.stores.active)
+      .map(link => `
+        <div class="store-card">
+          <div class="store-top">
+            <div class="store-name">${link.stores.name}</div>
+            <span class="avail-badge ${link.available ? 'avail-yes' : 'avail-call'}">${link.available ? '✅ متوفر' : '📞 اتصل للتأكد'}</span>
+          </div>
+          <div class="store-location">📍 ${link.stores.location}</div>
+          ${link.note ? `<div class="store-note">💬 ${link.note}</div>` : ''}
+          <div class="store-bottom">
+            <div class="store-price">${link.price.toLocaleString()} ${plant.currency}</div>
+            <button class="copy-btn" id="cpbtn-${plant.id}-${link.store_id}" onclick="copyPhone('${link.stores.phone}','${plant.id}-${link.store_id}')">📋 ${link.stores.phone}</button>
+          </div>
+        </div>
+      `).join('')
+
+    return `
+      <div class="result-block">
+        <div class="plant-card">
+          <div class="plant-emoji">${plant.emoji}</div>
+          <div style="flex:1">
+            <div class="plant-name-ar">${plant.name_ar}</div>
+            <div class="plant-name-en">${plant.name_en || ''}</div>
+            <div class="plant-desc">${plant.description || ''}</div>
+            <div class="plant-tags">${(plant.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+          </div>
+        </div>
+        <div class="price-band">
+          <div><div class="price-label">نطاق السعر التقريبي</div><div class="price-currency">${plant.currency}</div></div>
+          <div class="price-value">${plant.price_min.toLocaleString()} — ${plant.price_max.toLocaleString()}</div>
+        </div>
+        <div class="care-box">
+          <div class="section-mini">🌱 طريقة العناية</div>
+          <div class="care-grid">
+            <div class="care-item"><span class="care-icon">💧</span><div><div class="care-lbl">الري</div><div class="care-val">${plant.care_water||''}</div></div></div>
+            <div class="care-item"><span class="care-icon">☀️</span><div><div class="care-lbl">الضوء</div><div class="care-val">${plant.care_sun||''}</div></div></div>
+            <div class="care-item"><span class="care-icon">🪴</span><div><div class="care-lbl">التربة</div><div class="care-val">${plant.care_soil||''}</div></div></div>
+            <div class="care-item"><span class="care-icon">🌡️</span><div><div class="care-lbl">الحرارة</div><div class="care-val">${plant.care_temp||''}</div></div></div>
+          </div>
+        </div>
+        <div class="stores-title">🏪 المحلات المتاحة</div>
+        ${storeCards || '<p style="color:#9CA3AF;font-size:.85rem">لا توجد محلات مرتبطة</p>'}
+      </div>`
+  }).join('')
+}
+
+function copyPhone(phone, key) {
+  navigator.clipboard.writeText(phone).then(() => {
+    const btn = document.getElementById('cpbtn-' + key)
+    if (!btn) return
+    btn.classList.add('copied')
+    btn.textContent = '✅ تم النسخ!'
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = '📋 ' + phone }, 2000)
+  })
+}
+
+// ── ADMIN LOGIN ──────────────────────────────────────────────────────────────
+function doLogin() {
+  const pass = document.getElementById('passInput').value
+  if (pass === 'shatla2024') {
+    document.getElementById('loginScreen').style.display = 'none'
+    document.getElementById('dashboard').style.display = 'block'
+    loadAdmin()
+  } else {
+    document.getElementById('passErr').style.display = 'block'
+  }
+}
+
+function doLogout() {
+  document.getElementById('loginScreen').style.display = 'block'
+  document.getElementById('dashboard').style.display = 'none'
+  document.getElementById('passInput').value = ''
+}
+
+// ── ADMIN DATA ───────────────────────────────────────────────────────────────
+async function loadAdmin() {
+  const [{ data: stores }, { data: plants }] = await Promise.all([
+    db.from('stores').select('*').order('created_at'),
+    db.from('plants').select('*, plant_store_links(*, stores(*))').order('created_at')
+  ])
+  allStores = stores || []
+  allPlants = plants || []
+  document.getElementById('adminSub').textContent = `${allStores.length} محل · ${allPlants.length} نبتة`
+  renderStores()
+  renderPlants()
+}
+
+function switchSection(sec) {
+  currentSection = sec
+  document.querySelectorAll('.section-tab').forEach((el,i) => el.classList.toggle('active', ['stores','plants'][i] === sec))
+  document.getElementById('section-stores').style.display = sec === 'stores' ? 'block' : 'none'
+  document.getElementById('section-plants').style.display = sec === 'plants' ? 'block' : 'none'
+}
+
+// ── STORES ───────────────────────────────────────────────────────────────────
+function renderStores() {
+  const el = document.getElementById('section-stores')
+  el.innerHTML = `
+    <button class="add-btn" onclick="openStoreForm()">+ إضافة محل</button>
+    <div id="storeFormArea"></div>
+    ${allStores.map(s => `
+      <div class="item-card">
+        <div class="item-top">
+          <div>
+            <div class="item-name">${s.name}</div>
+            <div class="item-sub">📍 ${s.location}</div>
+            <div class="item-sub" style="color:#52B788;direction:ltr;text-align:right">${s.phone}</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="active-badge ${s.active?'badge-active':'badge-hidden'}">${s.active?'نشط':'مخفي'}</span>
+            <button class="icon-btn edit-btn-sm" onclick="openStoreForm('${s.id}')">✏️</button>
+            <button class="icon-btn del-btn-sm" onclick="deleteStore('${s.id}')">🗑</button>
+          </div>
+        </div>
+      </div>`).join('')}
+  `
+}
+
+function openStoreForm(id) {
+  const store = id ? allStores.find(s => s.id === id) : { name:'', location:'', phone:'', area:'', active:true }
+  storeFormData = { ...store }
+  const area = document.getElementById('storeFormArea')
+  area.innerHTML = `
+    <div class="form-box">
+      <h3>${id ? 'تعديل المحل' : 'إضافة محل جديد'}</h3>
+      <div class="form-group"><label class="form-label">اسم المحل</label><input class="form-input" id="sf-name" value="${storeFormData.name||''}"></div>
+      <div class="form-group"><label class="form-label">الموقع التفصيلي</label><input class="form-input" id="sf-location" value="${storeFormData.location||''}"></div>
+      <div class="form-group"><label class="form-label">رقم الهاتف</label><input class="form-input" id="sf-phone" value="${storeFormData.phone||''}"></div>
+      <div class="form-group"><label class="form-label">المنطقة</label><input class="form-input" id="sf-area" value="${storeFormData.area||''}"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <input type="checkbox" id="sf-active" ${storeFormData.active?'checked':''}>
+        <label for="sf-active" style="font-weight:700;font-size:.88rem;cursor:pointer">المحل نشط (ظاهر للمستخدمين)</label>
+      </div>
+      <div class="form-btns">
+        <button class="save-btn" onclick="saveStore('${id||''}')">💾 حفظ</button>
+        <button class="cancel-btn" onclick="document.getElementById('storeFormArea').innerHTML=''">إلغاء</button>
+      </div>
+    </div>`
+}
+
+async function saveStore(id) {
+  const data = {
+    name: document.getElementById('sf-name').value,
+    location: document.getElementById('sf-location').value,
+    phone: document.getElementById('sf-phone').value,
+    area: document.getElementById('sf-area').value,
+    active: document.getElementById('sf-active').checked
+  }
+  if (id) await db.from('stores').update(data).eq('id', id)
+  else await db.from('stores').insert(data)
+  showToast('✅ تم حفظ المحل')
+  await loadAdmin()
+}
+
+async function deleteStore(id) {
+  if (!confirm('تحذف هذا المحل؟')) return
+  await db.from('stores').delete().eq('id', id)
+  showToast('🗑 تم الحذف')
+  await loadAdmin()
+}
+
+// ── PLANTS ───────────────────────────────────────────────────────────────────
+function renderPlants() {
+  const el = document.getElementById('section-plants')
+  el.innerHTML = `
+    <button class="add-btn" onclick="openPlantForm()">+ إضافة نبتة</button>
+    <div id="plantFormArea"></div>
+    ${allPlants.map(p => `
+      <div class="item-card">
+        <div class="item-top">
+          <div style="display:flex;gap:10px;align-items:center">
+            <span style="font-size:1.8rem">${p.emoji}</span>
+            <div>
+              <div class="item-name">${p.name_ar}</div>
+              <div class="item-sub">${p.name_en||''}</div>
+              <div class="item-sub" style="color:#52B788">${p.price_min.toLocaleString()} — ${p.price_max.toLocaleString()} ${p.currency}</div>
+            </div>
+          </div>
+          <div class="item-actions">
+            <button class="icon-btn edit-btn-sm" onclick="openPlantForm('${p.id}')">✏️</button>
+            <button class="icon-btn del-btn-sm" onclick="deletePlant('${p.id}')">🗑</button>
+          </div>
+        </div>
+        <div class="store-links-preview">
+          ${(p.plant_store_links||[]).map(l => l.stores ? `<span class="link-chip">${l.stores.name} · ${l.price.toLocaleString()}</span>` : '').join('')}
+        </div>
+      </div>`).join('')}
+  `
+}
+
+function openPlantForm(id) {
+  const plant = id ? allPlants.find(p => p.id === id) : { emoji:'🌿', currency:'جنيه سوداني', tags:[], price_min:0, price_max:0, care_water:'', care_sun:'', care_soil:'', care_temp:'' }
+  plantFormData = { ...plant, tags: [...(plant.tags||[])] }
+  linkFormData = {}
+  if (id) {
+    ;(plant.plant_store_links||[]).forEach(l => {
+      linkFormData[l.store_id] = { price: l.price, available: l.available, note: l.note || '' }
+    })
+  }
+
+  const storeCheckboxes = allStores.filter(s => s.active).map(store => {
+    const lf = linkFormData[store.id]
+    return `
+      <div class="store-link-row" id="slrow-${store.id}">
+        <label class="store-link-check">
+          <input type="checkbox" id="slchk-${store.id}" ${lf?'checked':''} onchange="toggleStoreLink('${store.id}')">
+          <span style="font-weight:700;font-size:.88rem">${store.name}</span>
+        </label>
+        <div class="store-link-fields" id="slfields-${store.id}" style="${lf?'':'display:none'}">
+          <div><label class="form-label">السعر</label><input type="number" class="form-input" id="slprice-${store.id}" value="${lf?lf.price:0}"></div>
+          <div class="avail-check">
+            <input type="checkbox" id="slavail-${store.id}" ${lf&&lf.available?'checked':''}>
+            <label for="slavail-${store.id}" style="font-weight:700;font-size:.82rem;cursor:pointer">متوفر</label>
+          </div>
+          <div style="grid-column:1/-1"><label class="form-label">ملاحظة</label><input class="form-input" id="slnote-${store.id}" value="${lf?lf.note:''}"></div>
+        </div>
+      </div>`
+  }).join('')
+
+  const area = document.getElementById('plantFormArea')
+  area.innerHTML = `
+    <div class="form-box">
+      <h3>${id ? 'تعديل نبتة' : 'إضافة نبتة جديدة'}</h3>
+      <div class="form-row">
+        <div><label class="form-label">الاسم العربي</label><input class="form-input" id="pf-name-ar" value="${plantFormData.name_ar||''}"></div>
+        <div><label class="form-label">الاسم الإنجليزي</label><input class="form-input" id="pf-name-en" value="${plantFormData.name_en||''}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">الرمز emoji</label><input class="form-input" id="pf-emoji" value="${plantFormData.emoji||'🌿'}" style="width:80px"></div>
+      <div class="form-group"><label class="form-label">الوصف</label><textarea class="form-input" id="pf-desc" rows="2" style="resize:vertical">${plantFormData.description||''}</textarea></div>
+      <div class="form-group"><label class="form-label">التصنيفات (افصل بفاصلة)</label><input class="form-input" id="pf-tags" value="${(plantFormData.tags||[]).join(',')}" placeholder="داخلي,سهل العناية"></div>
+      <div class="form-row">
+        <div><label class="form-label">السعر الأدنى</label><input type="number" class="form-input" id="pf-pmin" value="${plantFormData.price_min||0}"></div>
+        <div><label class="form-label">السعر الأعلى</label><input type="number" class="form-input" id="pf-pmax" value="${plantFormData.price_max||0}"></div>
+      </div>
+      <div class="sub-section">
+        <div class="sub-title">🌱 العناية</div>
+        <div class="form-row">
+          <div><label class="form-label">💧 الري</label><input class="form-input" id="pf-water" value="${plantFormData.care_water||''}"></div>
+          <div><label class="form-label">☀️ الضوء</label><input class="form-input" id="pf-sun" value="${plantFormData.care_sun||''}"></div>
+          <div><label class="form-label">🪴 التربة</label><input class="form-input" id="pf-soil" value="${plantFormData.care_soil||''}"></div>
+          <div><label class="form-label">🌡️ الحرارة</label><input class="form-input" id="pf-temp" value="${plantFormData.care_temp||''}"></div>
+        </div>
+      </div>
+      <div class="sub-section">
+        <div class="sub-title">🏪 ربط بالمحلات</div>
+        ${storeCheckboxes}
+      </div>
+      <div class="form-btns">
+        <button class="save-btn" onclick="savePlant('${id||''}')">💾 حفظ النبتة</button>
+        <button class="cancel-btn" onclick="document.getElementById('plantFormArea').innerHTML=''">إلغاء</button>
+      </div>
+    </div>`
+}
+
+function toggleStoreLink(storeId) {
+  const chk = document.getElementById('slchk-' + storeId)
+  const fields = document.getElementById('slfields-' + storeId)
+  fields.style.display = chk.checked ? 'grid' : 'none'
+}
+
+async function savePlant(id) {
+  const tags = document.getElementById('pf-tags').value.split(',').map(t=>t.trim()).filter(Boolean)
+  const data = {
+    name_ar: document.getElementById('pf-name-ar').value,
+    name_en: document.getElementById('pf-name-en').value,
+    emoji: document.getElementById('pf-emoji').value,
+    description: document.getElementById('pf-desc').value,
+    tags,
+    price_min: +document.getElementById('pf-pmin').value,
+    price_max: +document.getElementById('pf-pmax').value,
+    currency: 'جنيه سوداني',
+    care_water: document.getElementById('pf-water').value,
+    care_sun: document.getElementById('pf-sun').value,
+    care_soil: document.getElementById('pf-soil').value,
+    care_temp: document.getElementById('pf-temp').value,
+  }
+  let plantId = id
+  if (id) {
+    await db.from('plants').update(data).eq('id', id)
+  } else {
+    const { data: inserted } = await db.from('plants').insert(data).select().single()
+    plantId = inserted.id
+  }
+  // Save store links
+  await db.from('plant_store_links').delete().eq('plant_id', plantId)
+  const links = allStores.filter(s => s.active).filter(s => {
+    const chk = document.getElementById('slchk-' + s.id)
+    return chk && chk.checked
+  }).map(s => ({
+    plant_id: plantId,
+    store_id: s.id,
+    price: +(document.getElementById('slprice-'+s.id)?.value||0),
+    available: document.getElementById('slavail-'+s.id)?.checked||false,
+    note: document.getElementById('slnote-'+s.id)?.value||''
+  }))
+  if (links.length > 0) await db.from('plant_store_links').insert(links)
+  showToast('✅ تم حفظ النبتة')
+  await loadAdmin()
+}
+
+async function deletePlant(id) {
+  if (!confirm('تحذف هذه النبتة؟')) return
+  await db.from('plants').delete().eq('id', id)
+  showToast('🗑 تم الحذف')
+  await loadAdmin()
+}
+</script>
+</body>
+</html>
